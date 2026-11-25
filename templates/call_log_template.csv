@@ -1,0 +1,3 @@
+touch_id,account_id,parent_id,arm,rep,touch_at,channel,dial_outcome,decision_maker_reached,framing_delivered_as_written,first_objection,objection_verbatim,next_step,meeting_booked,meeting_qualified,meeting_attended,notes
+T0001,SYN-001,SYNP-001,A,rep_1,2026-12-01T10:15:00-08:00,phone,connected,1,1,already_have_marketing,"We've got a guy for that",meeting_booked,1,,,synthetic example row
+T0002,SYN-002,SYNP-002,B,rep_1,2026-12-01T10:22:00-08:00,phone,voicemail,0,,,,callback,0,,,synthetic example row
