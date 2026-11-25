@@ -58,6 +58,13 @@ class AssignTests(unittest.TestCase):
         c = Counter(r["arm"] for r in existing)
         self.assertLessEqual(abs(c["control"] - c["A"]), 1)
 
+    def test_new_location_keeps_parent_stratum(self):
+        first = assign([acct("1", parent="P", state="GA")], [], "e", ["control", "A"], 1)
+        second = assign([acct("2", parent="P", state="AZ")], first, "e", ["control", "A"], 1)
+        self.assertEqual(second[0]["stratum"], first[0]["stratum"])
+        third = assign([acct("3", state="AZ"), acct("4", state="AZ")], first + second, "e", ["control", "A"], 1)
+        self.assertEqual(sorted(r["arm"] for r in third), ["A", "control"])
+
 
 class AnalyzeTests(unittest.TestCase):
     def test_itt_denominator_and_leakage_flagged(self):

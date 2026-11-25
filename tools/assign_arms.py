@@ -37,7 +37,9 @@ def stratum_of(row):
 def assign(accounts, existing, experiment, arms, seed, now=None):
     now = now or datetime.now(timezone.utc).isoformat()
     prior = [r for r in existing if r["experiment"] == experiment]
-    parent_arm = {r["parent_id"]: r["arm"] for r in prior}
+    parent_info = {}
+    for r in prior:
+        parent_info.setdefault(r["parent_id"], (r["stratum"], r["arm"]))
     assigned_ids = {r["account_id"] for r in prior}
 
     seen, parents = set(), defaultdict(list)
@@ -53,13 +55,14 @@ def assign(accounts, existing, experiment, arms, seed, now=None):
 
     new_rows, strata = [], defaultdict(list)
     for pid, rows in parents.items():
-        if pid in parent_arm:
-            new_rows += [_row(experiment, r, pid, parent_arm[pid], stratum_of(rows[0]), seed, now) for r in rows]
+        if pid in parent_info:
+            stratum, arm = parent_info[pid]
+            new_rows += [_row(experiment, r, pid, arm, stratum, seed, now) for r in rows]
         else:
             strata[stratum_of(rows[0])].append(pid)
 
     counts = defaultdict(Counter)
-    for pid, (stratum, arm) in {r["parent_id"]: (r["stratum"], r["arm"]) for r in prior}.items():
+    for stratum, arm in parent_info.values():
         counts[stratum][arm] += 1
 
     for stratum in sorted(strata):
