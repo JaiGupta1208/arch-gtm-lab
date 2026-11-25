@@ -51,6 +51,13 @@ class AssignTests(unittest.TestCase):
         self.assertEqual([r["account_id"] for r in second], ["2"])
         self.assertEqual(second[0]["arm"], first[0]["arm"])
 
+    def test_incremental_batches_with_same_seed_stay_balanced(self):
+        existing = []
+        for i in range(10):
+            existing += assign([acct(str(i))], existing, "e", ["control", "A"], 5)
+        c = Counter(r["arm"] for r in existing)
+        self.assertLessEqual(abs(c["control"] - c["A"]), 1)
+
 
 class AnalyzeTests(unittest.TestCase):
     def test_itt_denominator_and_leakage_flagged(self):

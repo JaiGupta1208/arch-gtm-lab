@@ -14,7 +14,7 @@ import argparse
 import csv
 import os
 import random
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 
 FIELDS = ["experiment", "account_id", "parent_id", "arm", "stratum", "seed", "assigned_at"]
@@ -58,13 +58,19 @@ def assign(accounts, existing, experiment, arms, seed, now=None):
         else:
             strata[stratum_of(rows[0])].append(pid)
 
-    rng = random.Random(seed)
+    counts = defaultdict(Counter)
+    for pid, (stratum, arm) in {r["parent_id"]: (r["stratum"], r["arm"]) for r in prior}.items():
+        counts[stratum][arm] += 1
+
     for stratum in sorted(strata):
         pids = sorted(strata[stratum])
+        rng = random.Random(f"{seed}|{experiment}|{stratum}|{','.join(pids)}")
         rng.shuffle(pids)
-        offset = rng.randrange(len(arms))
-        for i, pid in enumerate(pids):
-            arm = arms[(i + offset) % len(arms)]
+        c = counts[stratum]
+        for pid in pids:
+            low = min(c[a] for a in arms)
+            arm = rng.choice([a for a in arms if c[a] == low])
+            c[arm] += 1
             new_rows += [_row(experiment, r, pid, arm, stratum, seed, now) for r in parents[pid]]
     return new_rows
 
