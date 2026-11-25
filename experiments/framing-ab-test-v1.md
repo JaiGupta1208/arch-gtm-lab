@@ -13,7 +13,7 @@ Framings: `playbooks/hvac-cold-outbound-framings.md`
 | Stratification | State × size band × ServiceTitan-verified. |
 | Assignment | `tools/assign_arms.py` with a recorded seed. Assignments are append-only and never reassigned. |
 | Primary outcome | Qualified meetings booked per assigned account, analysed at parent-company level (the randomisation unit; a multi-location parent counts once). Qualification definition: **TBD with operator** (e.g. owner/GM attends, independent, uses ServiceTitan, 20 min held). |
-| Secondary | Meetings per decision-maker conversation; attended meetings; decision-maker connect rate (sanity check: it should *not* differ by arm); time and cost per qualified meeting; first-objection mix. |
+| Secondary | Share of parents reached at decision-maker level that booked a meeting (parent-level; equals per-conversation conversion for single-location shops); attended meetings; decision-maker connect rate (sanity check: it should *not* differ by arm); time and cost per qualified meeting; first-objection mix. |
 | Duration | Until each arm reaches its target number of assigned accounts, or 6 weeks max, whichever comes first. |
 | Cost | Rep time only. Record dials and minutes per arm. |
 | Guardrails | Do-not-contact requests honoured immediately. Rep logs `framing_delivered_as_written`. If adherence drops below 80% in an arm, pause and retrain. |
@@ -46,6 +46,6 @@ Convert to assigned parents using your own connect rate. For example, at a 25% d
 
 Keep one assignments file across rounds and always pass `--experiment` (required once the file holds more than one round). Touches dated before an account's assignment, e.g. from an earlier round, are ignored, so `touch_at` must be filled in on every call log row.
 
-Outcomes are rolled up to the parent company, the unit that was randomised, so multi-location parents don't inflate precision. Every assigned parent stays in the denominator, including ones never reached (intention-to-treat). The script reports, per arm, assigned parents and accounts, decision-maker conversations, meetings, qualified meetings, rates with 95% Wilson intervals, and a two-proportion z-test on the primary outcome.
+Outcomes are rolled up to the parent company, the unit that was randomised, so multi-location parents don't inflate precision. Every assigned parent stays in the denominator, including ones never reached (intention-to-treat). The script reports, per arm, assigned parents and accounts, then parents reached at decision-maker level, parents with a meeting and parents with a qualified meeting, rates with 95% Wilson intervals, and a two-proportion z-test on the primary outcome.
 
 This is a randomised comparison, so causal language is allowed for the primary outcome within this population and period only.

@@ -4,7 +4,8 @@ Usage:
     python3 tools/analyze_results.py assignments.csv call_log.csv [--experiment framing-ab-v1]
 
 Outcomes are rolled up to the parent company (the randomisation unit), so a
-multi-location parent counts once. Every assigned parent counts in its arm's
+multi-location parent counts once. "DM pars" is parents where any location
+reached a decision-maker; "mtgs" is parents with any booked meeting. Every assigned parent counts in its arm's
 denominator. --experiment is required when the assignment file holds more
 than one experiment. Touches dated before the account's assignment (e.g.
 from an earlier round) are ignored; touches without a touch_at are flagged
@@ -116,7 +117,7 @@ def main():
         p.error(str(e))
 
     print("unit = parent company (accounts sharing a parent_id count once)")
-    print(f"{'arm':<10}{'parents':>8}{'accts':>7}{'DM conv':>9}{'mtgs':>6}{'qual':>6}  qual/parent (95% CI)          mtg/DM conv")
+    print(f"{'arm':<10}{'parents':>8}{'accts':>7}{'DM pars':>9}{'mtgs':>6}{'qual':>6}  qual/parent (95% CI)          mtg-parents/DM-parents")
     for arm in sorted(res):
         r = res[arm]
         lo, hi = wilson(r["qualified"], r["assigned"])
