@@ -64,26 +64,40 @@ class AnalyzeTests(unittest.TestCase):
         assignments = [{"experiment": "e", "account_id": str(i), "arm": "A" if i % 2 else "control"} for i in range(10)]
         touches = [
             {"touch_id": "t1", "account_id": "1", "arm": "A", "decision_maker_reached": "1",
-             "meeting_booked": "1", "meeting_qualified": "1"},
+             "meeting_booked": "1", "meeting_qualified": "1", "touch_at": "2026-12-01T10:00:00-08:00"},
             {"touch_id": "t2", "account_id": "1", "arm": "A", "decision_maker_reached": "1",
-             "meeting_booked": "1", "meeting_qualified": "1"},
+             "meeting_booked": "1", "meeting_qualified": "1", "touch_at": "2026-12-01T10:00:00-08:00"},
             {"touch_id": "t3", "account_id": "2", "arm": "A", "decision_maker_reached": "1",
-             "meeting_booked": "1", "meeting_qualified": "1"},
+             "meeting_booked": "1", "meeting_qualified": "1", "touch_at": "2026-12-01T10:00:00-08:00"},
             {"touch_id": "t4", "account_id": "99", "arm": "A", "meeting_booked": "1"},
+            {"touch_id": "t5", "account_id": "3", "arm": "A", "meeting_booked": "1", "meeting_qualified": "1"},
         ]
         res, issues = summarize(assignments, touches)
         self.assertEqual(res["A"], {"assigned": 5, "accounts": 5, "dm": 1, "meeting": 1, "qualified": 1})
         self.assertEqual(res["control"]["assigned"], 5)
         self.assertEqual(res["control"]["qualified"], 0)
-        self.assertEqual(len(issues), 2)
+        self.assertEqual(len(issues), 3)  # arm mismatch, unassigned account, missing touch_at
 
     def test_multi_location_parent_counts_once(self):
         assignments = [{"experiment": "e", "account_id": a, "parent_id": "P1", "arm": "A"} for a in ("a1", "a2", "a3")]
         assignments.append({"experiment": "e", "account_id": "b1", "parent_id": "P2", "arm": "control"})
         touches = [{"touch_id": f"t{a}", "account_id": a, "arm": "A", "decision_maker_reached": "1",
-                    "meeting_booked": "1", "meeting_qualified": "1"} for a in ("a1", "a2", "a3")]
+                    "meeting_booked": "1", "meeting_qualified": "1", "touch_at": "2026-12-01T10:00:00-08:00"} for a in ("a1", "a2", "a3")]
         res, _ = summarize(assignments, touches)
         self.assertEqual(res["A"], {"assigned": 1, "accounts": 3, "dm": 1, "meeting": 1, "qualified": 1})
+
+    def test_rounds_isolated(self):
+        assignments = [
+            {"experiment": "r1", "account_id": "x", "arm": "A", "assigned_at": "2026-12-01T00:00:00+00:00"},
+            {"experiment": "r2", "account_id": "x", "arm": "control", "assigned_at": "2027-02-01T00:00:00+00:00"},
+        ]
+        old = {"touch_id": "t1", "account_id": "x", "decision_maker_reached": "1", "meeting_booked": "1",
+               "meeting_qualified": "1", "touch_at": "2026-12-05T10:00:00-08:00"}
+        with self.assertRaises(ValueError):
+            summarize(assignments, [old])
+        res, issues = summarize(assignments, [old], "r2")
+        self.assertEqual(res["control"]["qualified"], 0)
+        self.assertIn("1 touch(es) dated before assignment ignored", issues)
 
     def test_wilson_bounds(self):
         lo, hi = wilson(5, 100)

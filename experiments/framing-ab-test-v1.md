@@ -42,7 +42,9 @@ Convert to assigned parents using your own connect rate. For example, at a 25% d
 
 ## Analysis
 
-`python3 tools/analyze_results.py assignments.csv call_log.csv`
+`python3 tools/analyze_results.py assignments.csv call_log.csv --experiment framing-ab-v1`
+
+Keep one assignments file across rounds and always pass `--experiment` (required once the file holds more than one round). Touches dated before an account's assignment, e.g. from an earlier round, are ignored, so `touch_at` must be filled in on every call log row.
 
 Outcomes are rolled up to the parent company, the unit that was randomised, so multi-location parents don't inflate precision. Every assigned parent stays in the denominator, including ones never reached (intention-to-treat). The script reports, per arm, assigned parents and accounts, decision-maker conversations, meetings, qualified meetings, rates with 95% Wilson intervals, and a two-proportion z-test on the primary outcome.
 
