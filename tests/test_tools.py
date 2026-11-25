@@ -72,10 +72,18 @@ class AnalyzeTests(unittest.TestCase):
             {"touch_id": "t4", "account_id": "99", "arm": "A", "meeting_booked": "1"},
         ]
         res, issues = summarize(assignments, touches)
-        self.assertEqual(res["A"], {"assigned": 5, "dm": 1, "meeting": 1, "qualified": 1})
+        self.assertEqual(res["A"], {"assigned": 5, "accounts": 5, "dm": 1, "meeting": 1, "qualified": 1})
         self.assertEqual(res["control"]["assigned"], 5)
         self.assertEqual(res["control"]["qualified"], 0)
         self.assertEqual(len(issues), 2)
+
+    def test_multi_location_parent_counts_once(self):
+        assignments = [{"experiment": "e", "account_id": a, "parent_id": "P1", "arm": "A"} for a in ("a1", "a2", "a3")]
+        assignments.append({"experiment": "e", "account_id": "b1", "parent_id": "P2", "arm": "control"})
+        touches = [{"touch_id": f"t{a}", "account_id": a, "arm": "A", "decision_maker_reached": "1",
+                    "meeting_booked": "1", "meeting_qualified": "1"} for a in ("a1", "a2", "a3")]
+        res, _ = summarize(assignments, touches)
+        self.assertEqual(res["A"], {"assigned": 1, "accounts": 3, "dm": 1, "meeting": 1, "qualified": 1})
 
     def test_wilson_bounds(self):
         lo, hi = wilson(5, 100)

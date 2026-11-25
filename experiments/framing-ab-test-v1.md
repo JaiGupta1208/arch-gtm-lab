@@ -12,7 +12,7 @@ Framings: `playbooks/hvac-cold-outbound-framings.md`
 | Arms | Control = current script (paste it into `experiments/control-script.md` before launch). Treatment = Framing A. Opener and ask are identical across arms. |
 | Stratification | State × size band × ServiceTitan-verified. |
 | Assignment | `tools/assign_arms.py` with a recorded seed. Assignments are append-only and never reassigned. |
-| Primary outcome | Qualified meetings booked per assigned account. Qualification definition: **TBD with operator** (e.g. owner/GM attends, independent, uses ServiceTitan, 20 min held). |
+| Primary outcome | Qualified meetings booked per assigned account, analysed at parent-company level (the randomisation unit; a multi-location parent counts once). Qualification definition: **TBD with operator** (e.g. owner/GM attends, independent, uses ServiceTitan, 20 min held). |
 | Secondary | Meetings per decision-maker conversation; attended meetings; decision-maker connect rate (sanity check: it should *not* differ by arm); time and cost per qualified meeting; first-objection mix. |
 | Duration | Until each arm reaches its target number of assigned accounts, or 6 weeks max, whichever comes first. |
 | Cost | Rep time only. Record dials and minutes per arm. |
@@ -36,7 +36,7 @@ Two-sided α = 0.05, 80% power, per arm, counted as **decision-maker conversatio
 | 10% | 20% | ~199 |
 | 15% | 25% | ~250 |
 
-Convert to assigned accounts using your own connect rate. For example, at a 25% decision-maker connect rate across a full cadence, 200 conversations ≈ 800 accounts per arm.
+Convert to assigned parents using your own connect rate. For example, at a 25% decision-maker connect rate across a full cadence, 200 conversations ≈ 800 parent companies per arm.
 
 **Implication:** with typical solo-rep volumes, only large differences are detectable. Expect each round to give directional evidence, not proof. Report results with intervals and don't over-claim. The baseline rates above are illustrative, not Arch data; replace them with your actual numbers.
 
@@ -44,6 +44,6 @@ Convert to assigned accounts using your own connect rate. For example, at a 25% 
 
 `python3 tools/analyze_results.py assignments.csv call_log.csv`
 
-Every assigned account stays in the denominator, including ones never reached (intention-to-treat). The script reports, per arm, assigned accounts, decision-maker conversations, meetings, qualified meetings, rates with 95% Wilson intervals, and a two-proportion z-test on the primary outcome.
+Outcomes are rolled up to the parent company, the unit that was randomised, so multi-location parents don't inflate precision. Every assigned parent stays in the denominator, including ones never reached (intention-to-treat). The script reports, per arm, assigned parents and accounts, decision-maker conversations, meetings, qualified meetings, rates with 95% Wilson intervals, and a two-proportion z-test on the primary outcome.
 
 This is a randomised comparison, so causal language is allowed for the primary outcome within this population and period only.

@@ -3,7 +3,9 @@
 Usage:
     python3 tools/analyze_results.py assignments.csv call_log.csv [--experiment framing-ab-v1]
 
-Every assigned account counts in its arm's denominator. Touches from
+Outcomes are rolled up to the parent company (the randomisation unit), so a
+multi-location parent counts once. Every assigned parent counts in its arm's
+denominator. Touches from
 accounts not in the assignment file, or logged under a different arm than
 assigned, are reported as data-quality issues and ignored.
 """
@@ -40,9 +42,11 @@ def _flag(v):
 
 
 def summarize(assignments, touches, experiment=None):
-    arm_of = {r["account_id"]: r["arm"] for r in assignments if not experiment or r["experiment"] == experiment}
+    rows = [r for r in assignments if not experiment or r["experiment"] == experiment]
+    arm_of = {r["account_id"]: r["arm"] for r in rows}
+    parent_of = {r["account_id"]: r.get("parent_id") or r["account_id"] for r in rows}
     issues = []
-    per_acct = defaultdict(lambda: {"dm": False, "meeting": False, "qualified": False})
+    per_parent = defaultdict(lambda: {"dm": False, "meeting": False, "qualified": False})
     for t in touches:
         aid = t["account_id"]
         if aid not in arm_of:
@@ -51,16 +55,19 @@ def summarize(assignments, touches, experiment=None):
         if t.get("arm") and t["arm"] != arm_of[aid]:
             issues.append(f"touch {t.get('touch_id')} logged as arm {t['arm']} but {aid} assigned {arm_of[aid]}")
             continue
-        s = per_acct[aid]
+        s = per_parent[parent_of[aid]]
         s["dm"] |= _flag(t.get("decision_maker_reached"))
         s["meeting"] |= _flag(t.get("meeting_booked"))
         s["qualified"] |= _flag(t.get("meeting_qualified"))
 
     out = {}
-    for aid, arm in arm_of.items():
-        o = out.setdefault(arm, {"assigned": 0, "dm": 0, "meeting": 0, "qualified": 0})
+    arm_of_parent = {parent_of[aid]: arm for aid, arm in arm_of.items()}
+    for aid in arm_of:
+        out.setdefault(arm_of[aid], {"assigned": 0, "accounts": 0, "dm": 0, "meeting": 0, "qualified": 0})["accounts"] += 1
+    for pid, arm in arm_of_parent.items():
+        o = out[arm]
         o["assigned"] += 1
-        s = per_acct.get(aid)
+        s = per_parent.get(pid)
         if s:
             o["dm"] += s["dm"]
             o["meeting"] += s["meeting"]
@@ -80,13 +87,14 @@ def main():
         touches = list(csv.DictReader(f))
     res, issues = summarize(assignments, touches, a.experiment)
 
-    print(f"{'arm':<10}{'assigned':>9}{'DM conv':>9}{'mtgs':>6}{'qual':>6}  qual/assigned (95% CI)        mtg/DM conv")
+    print("unit = parent company (accounts sharing a parent_id count once)")
+    print(f"{'arm':<10}{'parents':>8}{'accts':>7}{'DM conv':>9}{'mtgs':>6}{'qual':>6}  qual/parent (95% CI)          mtg/DM conv")
     for arm in sorted(res):
         r = res[arm]
         lo, hi = wilson(r["qualified"], r["assigned"])
         rate = r["qualified"] / r["assigned"] if r["assigned"] else 0
         mdm = f"{r['meeting'] / r['dm']:.1%}" if r["dm"] else "n/a"
-        print(f"{arm:<10}{r['assigned']:>9}{r['dm']:>9}{r['meeting']:>6}{r['qualified']:>6}  {rate:6.1%} ({lo:.1%}-{hi:.1%})       {mdm}")
+        print(f"{arm:<10}{r['assigned']:>8}{r['accounts']:>7}{r['dm']:>9}{r['meeting']:>6}{r['qualified']:>6}  {rate:6.1%} ({lo:.1%}-{hi:.1%})       {mdm}")
     arms = sorted(res)
     if len(arms) == 2:
         x, y = res[arms[0]], res[arms[1]]
